@@ -19,15 +19,40 @@ class Value():
         out._backward = _backward
         return out
     
+    def __pow__(self, other):
+        assert isinstance(other, (int, float)), "Only supports int/ float for now"  
+        val = self.data ** other
+        out = Value(val, _child=(self, ), _op="pow")
+        def _backward():
+            self.grad += (other * (self.data ** (other -1))) * out.grad
+        
+        out._backward = _backward
+        return out
+            
+    
     def __mul__(self, other):
         val = self.data * other.data
         out = Value(val, _child=(self, other), _op="*")
 
         def _backward():
-            self.grad += out.grad + other.data
-            other.grad += out.grad + self.data
+            self.grad += out.grad * other.data
+            other.grad += out.grad * self.data
         
-        self._backward = _backward
+        out._backward = _backward
+        return out
+    
+    def relu(self):
+        # if x > 0 : x else 0
+        val = max(0, self.data)
+        out = Value(val, _child=(self,), _op="ReLU")
+
+        def _backward():
+            if self.data > 0:
+                self.grad += out.grad
+            else:
+                self.grad += 0
+
+        out._backward = _backward
         return out
     
     def backward(self):
